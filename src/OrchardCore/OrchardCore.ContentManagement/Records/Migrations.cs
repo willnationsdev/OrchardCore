@@ -21,7 +21,6 @@ namespace OrchardCore.ContentManagement.Records
                 .Column<string>("ContentItemVersionId", c => c.WithLength(26))
                 .Column<bool>("Latest")
                 .Column<bool>("Published")
-                .Column<bool>("Bool1")
                 .Column<string>("ContentType", column => column.WithLength(ContentItemIndex.MaxContentTypeSize))
                 .Column<DateTime>("ModifiedUtc", column => column.Nullable())
                 .Column<DateTime>("PublishedUtc", column => column.Nullable())
@@ -29,23 +28,6 @@ namespace OrchardCore.ContentManagement.Records
                 .Column<string>("Owner", column => column.Nullable().WithLength(ContentItemIndex.MaxOwnerSize))
                 .Column<string>("Author", column => column.Nullable().WithLength(ContentItemIndex.MaxAuthorSize))
                 .Column<string>("DisplayText", column => column.Nullable().WithLength(ContentItemIndex.MaxDisplayTextSize))
-            );
-
-            SchemaBuilder.AlterIndexTable<ContentItemIndex>(table => table
-                .CreateIndex("IDX_ContentItemIndex_DocumentId",
-                    //"DocumentId",
-                    //"ContentItemId",
-                    //"ContentItemVersionId",
-                    "Latest",
-                    "Published",
-                    "Bool1",
-                    "ContentType",
-                    //"ModifiedUtc",
-                    "PublishedUtc",
-                    "CreatedUtc",
-                    //"Owner",
-                    "Author",
-                    "DisplayText")
             );
 
             SchemaBuilder.AlterIndexTable<ContentItemIndex>(table => table
