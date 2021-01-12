@@ -35,7 +35,7 @@ namespace OrchardCore.Workflows
                 .Column<string>("ActivityId")
                 .Column<string>("ActivityName")
                 .Column<bool>("ActivityIsStart")
-                .Column<string>("WorkflowTypeId", col => col.WithLength(16))
+                .Column<string>("WorkflowTypeId", col => col.WithLength(12))
                 .Column<string>("WorkflowId")
                 .Column<string>("WorkflowCorrelationId")
             );
