@@ -35,14 +35,13 @@ namespace OrchardCore.Workflows
                 .Column<string>("ActivityId")
                 .Column<string>("ActivityName")
                 .Column<bool>("ActivityIsStart")
-                .Column<string>("WorkflowTypeId")
+                .Column<string>("WorkflowTypeId", col => col.WithLength(16))
                 .Column<string>("WorkflowId")
                 .Column<string>("WorkflowCorrelationId")
             );
 
             SchemaBuilder.AlterIndexTable<WorkflowBlockingActivitiesIndex>(table => table
                 .CreateIndex("IDX_WorkflowBlockingActivitiesIndex_DocumentId_ActivityId",
-                "DocumentId",
                 "ActivityId",
                 "ActivityName",
                 "WorkflowTypeId",
