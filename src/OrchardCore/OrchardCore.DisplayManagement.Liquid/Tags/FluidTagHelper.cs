@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.Encodings.Web;
 using System.Threading;
 using System.Threading.Tasks;
@@ -72,50 +71,60 @@ namespace OrchardCore.DisplayManagement.Liquid.Tags
 
             ViewBufferTextWriterContent content = null;
 
-            if (statements != null && statements.Count > 0)
+            try
             {
-                content = new ViewBufferTextWriterContent();
-
-                var completion = Completion.Break;
-
-                for (var index = 0; index < statements.Count; index++)
+                if (statements != null && statements.Count > 0)
                 {
-                    completion = await statements[index].WriteToAsync(content, encoder, context);
+                    content = new ViewBufferTextWriterContent();
 
-                    if (completion != Completion.Normal)
+                    var completion = Completion.Break;
+
+                    for (var index = 0; index < statements.Count; index++)
                     {
-                        return completion;
+                        completion = await statements[index].WriteToAsync(content, encoder, context);
+
+                        if (completion != Completion.Normal)
+                        {
+                            return completion;
+                        }
                     }
                 }
+
+                Interlocked.CompareExchange(ref _uniqueId, long.MaxValue, 0);
+                var id = Interlocked.Increment(ref _uniqueId);
+
+                var tagHelperContext = new TagHelperContext(contextAttributes, new Dictionary<object, object>(), id.ToString());
+
+                TagHelperOutput tagHelperOutput = null;
+
+                if (content != null)
+                {
+                    tagHelperOutput = new TagHelperOutput(
+                        identifier,
+                        outputAttributes, (_, e) => Task.FromResult(new DefaultTagHelperContent().AppendHtml(content))
+                    );
+
+                    tagHelperOutput.Content.AppendHtml(content);
+                }
+                else
+                {
+                    tagHelperOutput = new TagHelperOutput(
+                        identifier,
+                        outputAttributes, (_, e) => Task.FromResult<TagHelperContent>(new DefaultTagHelperContent())
+                    );
+                }
+
+                await tagHelper.ProcessAsync(tagHelperContext, tagHelperOutput);
+
+                tagHelperOutput.WriteTo(writer, (HtmlEncoder)encoder);
             }
-
-            Interlocked.CompareExchange(ref _uniqueId, long.MaxValue, 0);
-            var id = Interlocked.Increment(ref _uniqueId);
-
-            var tagHelperContext = new TagHelperContext(contextAttributes, new Dictionary<object, object>(), id.ToString());
-
-            TagHelperOutput tagHelperOutput = null;
-
-            if (content != null)
+            finally
             {
-                tagHelperOutput = new TagHelperOutput(
-                    identifier,
-                    outputAttributes, (_, e) => Task.FromResult(new DefaultTagHelperContent().AppendHtml(content))
-                );
-
-                tagHelperOutput.Content.AppendHtml(content);
+                if (content != null)
+                {
+                    content.Dispose();
+                }
             }
-            else
-            {
-                tagHelperOutput = new TagHelperOutput(
-                    identifier,
-                    outputAttributes, (_, e) => Task.FromResult<TagHelperContent>(new DefaultTagHelperContent())
-                );
-            }
-
-            await tagHelper.ProcessAsync(tagHelperContext, tagHelperOutput);
-
-            tagHelperOutput.WriteTo(writer, (HtmlEncoder)encoder);
 
             return Completion.Normal;
         }
