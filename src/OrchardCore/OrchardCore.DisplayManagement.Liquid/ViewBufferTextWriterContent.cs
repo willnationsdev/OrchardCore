@@ -66,7 +66,7 @@ namespace OrchardCore.DisplayManagement.Liquid
         {
             if (index == 0 && buffer.Length == count)
             {
-                _fragments.Add(new CharrArrayHtmlContent(buffer));
+                Write(buffer);
             }
             else
             {
