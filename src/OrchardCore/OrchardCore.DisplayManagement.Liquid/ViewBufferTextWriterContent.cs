@@ -1,10 +1,8 @@
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.Encodings.Web;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Html;
 
 namespace OrchardCore.DisplayManagement.Liquid
@@ -18,7 +16,6 @@ namespace OrchardCore.DisplayManagement.Liquid
     {
         private static readonly HtmlString[] _internedChars = InitInternedChars();
         private const int _internedCharsLength = 256;
-        private List<char[]> _pooledArrays;
 
         private readonly List<IHtmlContent> _fragments = new List<IHtmlContent>();
 
@@ -79,19 +76,6 @@ namespace OrchardCore.DisplayManagement.Liquid
 
         public override void Write(ReadOnlySpan<char> buffer)
         {
-            var array = ArrayPool<char>.Shared.Rent(buffer.Length);
-
-            try
-            {
-                buffer.CopyTo(new Span<char>(array));
-                _pooledArrays ??= new List<char[]>();
-                _pooledArrays.Add(array);
-            }
-            catch
-            {
-                ArrayPool<char>.Shared.Return(array);
-            }
-
             _fragments.Add(new CharrArrayHtmlContent(buffer.ToArray()));
         }
 
@@ -103,58 +87,6 @@ namespace OrchardCore.DisplayManagement.Liquid
                 writer.Write(fragment);
             }
         }
-
-        #region Async Write methods, to prevent the base TextWriter from calling Task.Factory.StartNew
-        /// <inheritdoc />
-        public override Task WriteAsync(char value)
-        {
-            Write(value);
-            return Task.CompletedTask;
-        }
-
-        /// <inheritdoc />
-        public override Task WriteAsync(char[] buffer, int index, int count)
-        {
-            Write(buffer, index, count);
-            return Task.CompletedTask;
-        }
-
-        /// <inheritdoc />
-        public override Task WriteAsync(string value)
-        {
-            Write(value);
-            return Task.CompletedTask;
-        }
-
-        /// <inheritdoc />
-        public override Task WriteLineAsync(char value)
-        {
-            WriteLine(value);
-            return Task.CompletedTask;
-        }
-
-        /// <inheritdoc />
-        public override Task WriteLineAsync(char[] value, int start, int offset)
-        {
-            WriteLine(value, start, offset);
-            return Task.CompletedTask;
-        }
-
-        /// <inheritdoc />
-        public override Task WriteLineAsync(string value)
-        {
-            WriteLineAsync(value);
-            return Task.CompletedTask;
-        }
-
-        /// <inheritdoc />
-        public override Task WriteLineAsync()
-        {
-            WriteLine();
-            return Task.CompletedTask;
-        }
-
-        #endregion
 
         /// <summary>
         /// An <see cref="IHtmlContent"/> implementation that wraps an HTML encoded <see langword="char[]"/>.
@@ -213,25 +145,6 @@ namespace OrchardCore.DisplayManagement.Liquid
             {
                 return new String(Value, Index, Length);
             }
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                if (_pooledArrays != null)
-                {
-                    for (var i = 0; i< _pooledArrays.Count; i++)
-                    {
-                        ArrayPool<char>.Shared.Return(_pooledArrays[i]);
-                    }
-
-                    _pooledArrays.Clear();
-                    _pooledArrays = null;
-                }
-            }
-
-            base.Dispose(disposing);
         }
     }
 }
