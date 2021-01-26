@@ -9,7 +9,7 @@ namespace OrchardCore.DisplayManagement.Liquid.TagHelpers
     {
         private const string AspPrefix = "asp-";
         public readonly static LiquidTagHelperMatching None = new LiquidTagHelperMatching();
-        public readonly IEnumerable<TagMatchingRuleDescriptor> _rules = Enumerable.Empty<TagMatchingRuleDescriptor>();
+        public readonly TagMatchingRuleDescriptor[] _rules;
 
         public LiquidTagHelperMatching()
         {
@@ -36,7 +36,7 @@ namespace OrchardCore.DisplayManagement.Liquid.TagHelpers
                 }
 
                 // Does it expect any specific attribute?
-                if (!rule.Attributes.Any())
+                if (rule.Attributes.Count == 0)
                 {
                     return true;
                 }
@@ -45,17 +45,31 @@ namespace OrchardCore.DisplayManagement.Liquid.TagHelpers
                 var allRequired = rule.Attributes.All(attr => arguments.Any(name =>
                 {
                     // Exact match
-                    if (String.Equals(name, attr.Name, StringComparison.OrdinalIgnoreCase))
+                    if (String.Equals(name, attr.Name, StringComparison.Ordinal))
                     {
                         return true;
                     }
 
-                    // Check by replacing all '_' with '-', e.g. asp_src will map to asp-src
-                    name = name.Replace('_', '-');
-
-                    if (attr.Name.StartsWith(AspPrefix, StringComparison.Ordinal) && String.Equals(name, attr.Name.Substring(AspPrefix.Length), StringComparison.OrdinalIgnoreCase))
+                    if (attr.Name.StartsWith(AspPrefix, StringComparison.Ordinal))
                     {
-                        return true;
+                        // Check by replacing all '_' with '-', e.g. asp_src will map to asp-src
+                        if (name.Length == attr.Name.Length - AspPrefix.Length)
+                        {
+                            name = name.Replace('_', '-');
+                            var nameSpan = name.AsSpan();
+                            var attrNameSpan = attr.Name.AsSpan(AspPrefix.Length);
+                            if (nameSpan.Equals(attrNameSpan, StringComparison.OrdinalIgnoreCase))
+                            {
+                                return true;
+                            }
+                        }
+
+                        return false;
+                    }
+
+                    if (name.Contains("_", StringComparison.Ordinal))
+                    {
+                        name = name.Replace('_', '-');
                     }
 
                     if (String.Equals(name, attr.Name, StringComparison.OrdinalIgnoreCase))
