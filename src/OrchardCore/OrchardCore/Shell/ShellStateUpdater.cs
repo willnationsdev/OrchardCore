@@ -40,7 +40,7 @@ namespace OrchardCore.Environment.Shell
         {
             if (_logger.IsEnabled(LogLevel.Information))
             {
-                _logger.LogInformation("Applying changes for for tenant '{TenantName}'", _settings.Name);
+                _logger.LogInformation("Applying changes for tenant '{TenantName}'", _settings.Name);
             }
 
             var loadedFeatures = await _extensionManager.LoadFeaturesAsync();
